@@ -28,19 +28,19 @@ def first():
 
 @app.teardown_request
 def close(exception):
-    g.connection.disconnect()
+    g.connection.close()
 
 
 @app.route('/')
 def start_page():
+    print("entered start page")  # TEST ***************************
     if 'verified' in request.cookies and request.cookies['verified'] == 'True':
+        print "entered into verified section"  # TEST ***************************
         d = {}
         d['foruri'] = request.args['foruri']
+        print "entered here"  # TEST ***************************
         myhandler1 = urllib2.Request(d['foruri'],
-                                     headers={'User-Agent':
-                                              "Mozilla/5.0 (X11; " +
-                                              "Linux x86_64; rv:25.0)" +
-                                              "Gecko/20100101 Firefox/25.0)"})
+                                     headers={'User-Agent':"Mozilla/5.0 (X11; " + "Linux x86_64; rv:25.0)" +"Gecko/20100101 Firefox/25.0)"})
     # A fix to send user-agents, so that sites render properly.
         try:
             a = urllib2.urlopen(myhandler1)
@@ -130,15 +130,20 @@ def verify():
     if request.method == "GET":
         return render_template('verify.html')
     else:
+        print "posting"     # TEST 1 ****************************
         captcha_string = request.form.get('g-recaptcha-response')
         gVerify = requests.get(conf.RECAPTCHA_URL + "?secret=" + conf.RECAPTCHA_SECRET + "&response=" + captcha_string)
         if gVerify.json()['success'] is True:
+            print "FOUND TRUE"  # TEST 2 ***************************
             print session.get('params')
             response = make_response(redirect(url_for('start_page', **session.get('params'))))
 
             response.set_cookie('verified', 'True', 1800)
+
+            print "returning response"   # TEST 3 ***************************
             return response
         else:
+            print "Redirecting to verify"  # TEST 4 ***************************
             return redirect(url_for('verify'))
 
 
@@ -171,7 +176,7 @@ def setScripts():
     style.set("type", "text/css")
     style.set("href", conf.APPURL[0] + "/alipi/pack.min.css")
 
-
+#-----------------------------------------------------------------------------------------------------------------------
 def setSocialScript():
     info_button = g.root.makeelement('button')
     g.root.body.append(info_button)
@@ -238,12 +243,13 @@ def setSocialScript():
     style.set("rel", "stylesheet")
     style.set("type", "text/css")
     style.set("href", "http://y.a11y.in/alipi/stylesheet.css")
-
+#-----------------------------------------------------------------------------------------------------------------------
 
 @app.route('/redirect')
 def redirect_uri():
     auth_tok = None
     if request.args.get('code'):
+        # SWTstore authentication payload
         payload = {
             'scopes': 'email sweet',
             'client_secret': conf.APP_SECRET,
@@ -291,6 +297,7 @@ def show_directory():
                            myset=set, mylist=list)
 
 
+# this is something we need for now
 @app.route('/getLoc', methods=['GET'])
 def get_loc():
 
@@ -656,4 +663,4 @@ fil.setLevel(logging.ERROR)
 app.logger.addHandler(fil)
 
 if __name__ == '__main__':
-    app.run(debug=True, host=conf.MONGOHOST[0])
+    app.run(debug=True, host='127.0.0.1', port=5002)
